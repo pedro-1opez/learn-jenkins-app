@@ -33,7 +33,7 @@ pipeline {
                 sh '''
                     echo "Running tests..."
 
-                    if [ -f /build/index.html]; then
+                    if [ -f build/index.html ]; then
                         echo "Build successful"
                     else
                         echo "Build failed"
