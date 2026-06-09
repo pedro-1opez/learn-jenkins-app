@@ -19,6 +19,23 @@ pipeline {
                     ls -la
                 '''
             }
-        }                
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    echo "Running tests..."
+
+                    if [ -f /build/index.html]; then
+                        echo "Build successful"
+                    else
+                        echo "Build failed"
+                        exit 1
+                    fi
+
+                    npm test
+                '''
+            }
+        }
     }
 }
