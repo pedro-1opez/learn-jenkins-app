@@ -17,6 +17,7 @@ pipeline {
             }
             steps {
                 sh '''
+                    echo "this is a message from the build stage"
                     ls -la
                     node --version
                     npm --version
