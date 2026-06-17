@@ -93,7 +93,7 @@ pipeline {
                     node_modules/.bin/netlify deploy --dir=build --json > deploy-staging.json                    
                 '''
                 script {
-                    env.STAGING_DEPLOY_URL = sh(script: "node_modules/.bin/node-jq -r '.deploy' deploy-staging.json", returnStdout: true)
+                    env.STAGING_DEPLOY_URL = sh(script: "node_modules/.bin/node-jq -r '.deploy' deploy-staging.json", returnStdout: true).trim()
                 }
             }            
         }
@@ -107,7 +107,7 @@ pipeline {
             }
 
             environment {
-                CI_ENVIRONMENT_URL = '${env.STAGING_DEPLOY_URL}'
+                CI_ENVIRONMENT_URL = "${env.STAGING_DEPLOY_URL}"
             }
 
             steps {
