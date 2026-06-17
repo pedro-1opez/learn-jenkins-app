@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NETLIFY_SITE_ID = 'a3fbb6a4-3c3e-47f4-a387-da0d5f4b001a'
+        NETLIFY_SITE_ID = 'YOUR NETLIFY SITE ID'
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
 
@@ -17,7 +17,6 @@ pipeline {
             }
             steps {
                 sh '''
-                    echo "this is a message from the build stage"
                     ls -la
                     node --version
                     npm --version
@@ -70,8 +69,8 @@ pipeline {
 
                     post {
                         always {
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright Local', reportTitles: '', useWrapperFileDirectly: true])
-                        } 
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Local E2E', reportTitles: '', useWrapperFileDirectly: true])
+                        }
                     }
                 }
             }
@@ -86,16 +85,16 @@ pipeline {
             }
             steps {
                 sh '''
-                    npm install netlify-cli@20.1.1 node-jq
+                    npm install netlify-cli node-jq
                     node_modules/.bin/netlify --version
-                    echo "Deploying to staging. Site ID: ${NETLIFY_SITE_ID}"
+                    echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --json > deploy-staging.json                    
+                    node_modules/.bin/netlify deploy --dir=build --json > deploy-output.json
                 '''
                 script {
-                    env.STAGING_DEPLOY_URL = sh(script: "node_modules/.bin/node-jq -r '.deploy' deploy-staging.json", returnStdout: true).trim()
+                    env.STAGING_URL = sh(script: "node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json", returnStdout: true)
                 }
-            }            
+            }
         }
 
         stage('Staging E2E') {
@@ -107,11 +106,11 @@ pipeline {
             }
 
             environment {
-                CI_ENVIRONMENT_URL = "${env.STAGING_DEPLOY_URL}"
+                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
             }
 
             steps {
-                sh '''                    
+                sh '''
                     npx playwright test  --reporter=html
                 '''
             }
@@ -125,13 +124,13 @@ pipeline {
 
         stage('Approval') {
             steps {
-                timeout(time: 1, unit: 'MINUTES') {
-                    input message: 'Approve deployment to production?', ok: 'Deploy'
+                timeout(time: 15, unit: 'MINUTES') {
+                    input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
                 }
             }
         }
 
-        stage('Deploy production') {
+        stage('Deploy prod') {
             agent {
                 docker {
                     image 'node:18-alpine'
@@ -140,11 +139,11 @@ pipeline {
             }
             steps {
                 sh '''
-                    npm install netlify-cli@20.1.1
+                    npm install netlify-cli
                     node_modules/.bin/netlify --version
-                    echo "Deploying to production. Site ID: ${NETLIFY_SITE_ID}"
+                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --prod --site=${NETLIFY_SITE_ID} --auth=${NETLIFY_AUTH_TOKEN}
+                    node_modules/.bin/netlify deploy --dir=build --prod
                 '''
             }
         }
@@ -158,11 +157,11 @@ pipeline {
             }
 
             environment {
-                CI_ENVIRONMENT_URL = 'https://aquamarine-platypus-d06dca.netlify.app'
+                CI_ENVIRONMENT_URL = 'YOUR NETLIFY URL'
             }
 
             steps {
-                sh '''                    
+                sh '''
                     npx playwright test  --reporter=html
                 '''
             }
