@@ -90,9 +90,11 @@ pipeline {
                     echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
                     node_modules/.bin/netlify status
                     node_modules/.bin/netlify deploy --dir=build --json > deploy-output.json
+                    cat deploy-output.json
                 '''
                 script {
-                    env.STAGING_URL = sh(script: "node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json", returnStdout: true)
+                    env.STAGING_URL = sh(script: "node_modules/.bin/node-jq -r '.url' deploy-output.json", returnStdout: true).trim()
+                    writeFile file: 'staging-url.txt', text: env.STAGING_URL
                 }
             }
         }
@@ -105,13 +107,12 @@ pipeline {
                 }
             }
 
-            environment {
-                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
-            }
-
             steps {
                 sh '''
-                    npx playwright test  --reporter=html
+                    STAGING_URL=$(cat staging-url.txt)
+                    export CI_ENVIRONMENT_URL=$STAGING_URL
+                    echo "Testing against: $CI_ENVIRONMENT_URL"
+                    npx playwright test --reporter=html
                 '''
             }
 
